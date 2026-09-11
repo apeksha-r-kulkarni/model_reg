@@ -1,0 +1,23 @@
+# Environments
+.venv/
+env/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Databases
+*.sqlite3
+mlflow.db
+
+# MLflow
+mlartifacts/
+mlruns/
+
+# IDEs
+.vscode/
+
+# Models
+*.pkl
