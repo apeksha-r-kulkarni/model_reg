@@ -359,6 +359,117 @@
             margin: 28px 0;
         }
 
+        /* ── View Models button ──────────────────────────────────────────── */
+        .btn-secondary {
+            width: 100%;
+            padding: 12px 24px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .btn-secondary:hover:not(:disabled) {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+            background: rgba(99, 179, 237, 0.05);
+        }
+        .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary .btn-spinner {
+            width: 14px; height: 14px;
+            border: 2px solid rgba(148,163,184,0.3);
+            border-top-color: var(--text-secondary);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: none;
+        }
+
+        /* ── Models list panel ───────────────────────────────────────────── */
+        .models-panel {
+            margin-top: 24px;
+            animation: fadeUp 0.4s ease both;
+        }
+        .models-panel.hidden { display: none; }
+        .models-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+        .models-panel-title {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+        .models-count {
+            font-size: 11px;
+            padding: 2px 10px;
+            border-radius: 100px;
+            background: rgba(99,179,237,0.1);
+            border: 1px solid rgba(99,179,237,0.2);
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+        .models-table-wrap {
+            overflow-x: auto;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+        }
+        .models-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .models-table th {
+            text-align: left;
+            padding: 10px 14px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid var(--border);
+        }
+        .models-table td {
+            padding: 11px 14px;
+            color: var(--text-primary);
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            word-break: break-all;
+        }
+        .models-table tr:last-child td { border-bottom: none; }
+        .models-table tr:hover td { background: rgba(255,255,255,0.02); }
+        .version-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 100px;
+            background: rgba(104,211,145,0.1);
+            border: 1px solid rgba(104,211,145,0.25);
+            color: var(--accent-green);
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .empty-state {
+            padding: 28px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-family: inherit;
+        }
+
         /* ── Animations ──────────────────────────────────────────────────── */
         @keyframes fadeDown {
             from { opacity: 0; transform: translateY(-16px); }
@@ -451,6 +562,34 @@
 
         <!-- ── Result panel (shown after submit) ─────────────────────── -->
         <div id="resultPanel" class="hidden"></div>
+
+        <!-- ── View Registered Models button ─────────────────────────── -->
+        <button class="btn-secondary" id="listModelsBtn" type="button">
+            <span class="btn-spinner" id="listSpinner"></span>
+            <span id="listBtnText">🗂 View Registered Models</span>
+        </button>
+
+        <!-- ── Models list panel ──────────────────────────────────────── -->
+        <div class="models-panel hidden" id="modelsPanel">
+            <div class="models-panel-header">
+                <span class="models-panel-title">Registered Models</span>
+                <span class="models-count" id="modelsCount">0</span>
+            </div>
+            <div class="models-table-wrap">
+                <table class="models-table">
+                    <thead>
+                        <tr>
+                            <th>Version</th>
+                            <th>Status</th>
+                            <th>Run ID</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modelsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
     </main>
 
 
@@ -603,6 +742,108 @@
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;');
+        }
+
+        // ── View Registered Models ─────────────────────────────────────────
+
+        const listModelsBtn  = document.getElementById('listModelsBtn');
+        const listSpinner    = document.getElementById('listSpinner');
+        const listBtnText    = document.getElementById('listBtnText');
+        const modelsPanel    = document.getElementById('modelsPanel');
+        const modelsCount    = document.getElementById('modelsCount');
+        const modelsTableBody = document.getElementById('modelsTableBody');
+
+        listModelsBtn.addEventListener('click', async function () {
+            setListLoading(true);
+
+            try {
+                const response = await fetch('/api/models/');
+                const data = await response.json();
+
+                if (!data.success) {
+                    showError(data.error || 'Could not fetch models.');
+                    modelsPanel.classList.add('hidden');
+                    return;
+                }
+
+                renderModelsTable(data.models);
+
+            } catch (err) {
+                showError(`Network error: ${err.message}`);
+                modelsPanel.classList.add('hidden');
+            } finally {
+                setListLoading(false);
+            }
+        });
+
+        function setListLoading(loading) {
+            listModelsBtn.disabled = loading;
+            listSpinner.style.display = loading ? 'block' : 'none';
+            listBtnText.textContent = loading ? 'Fetching…' : '🗂 View Registered Models';
+        }
+
+        function renderModelsTable(models) {
+            // Count total unique model names
+            modelsCount.textContent = models.length;
+            modelsTableBody.innerHTML = '';
+
+            if (models.length === 0) {
+                modelsTableBody.innerHTML = `
+                    <tr><td colspan="4" class="empty-state">No models registered yet.</td></tr>
+                `;
+                modelsPanel.classList.remove('hidden');
+                return;
+            }
+
+            for (const model of models) {
+                const versions = model.all_versions;
+
+                // Group header row — spans full width with the model name
+                const groupRow = document.createElement('tr');
+                groupRow.innerHTML = `
+                    <td colspan="4" style="
+                        background: rgba(99,179,237,0.06);
+                        border-bottom: 1px solid rgba(99,179,237,0.15);
+                        border-top: 1px solid rgba(99,179,237,0.15);
+                        padding: 8px 14px;
+                        font-family: inherit;
+                        font-size: 12px;
+                        font-weight: 600;
+                        color: var(--accent-blue);
+                        letter-spacing: 0.04em;
+                    ">📦 ${escHtml(model.name)} <span style="font-weight:400;color:var(--text-muted);">(${versions.length} version${versions.length !== 1 ? 's' : ''})</span></td>
+                `;
+                modelsTableBody.appendChild(groupRow);
+
+                if (versions.length === 0) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>—</td><td>—</td><td>—</td><td>—</td>
+                    `;
+                    modelsTableBody.appendChild(row);
+                } else {
+                    // One row per version — newest first (already sorted by service)
+                    for (const v of versions) {
+                        const isLatest = v.version === versions[0].version;
+                        const createdDate = v.creation_timestamp
+                            ? new Date(v.creation_timestamp).toLocaleString()
+                            : '—';
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td style="white-space: nowrap;">
+                                <span class="version-badge">v${escHtml(String(v.version))}</span>
+                                ${isLatest ? '<span style="margin-left:6px;font-size:10px;color:var(--accent-green);font-family:inherit;font-weight:600;">LATEST</span>' : ''}
+                            </td>
+                            <td style="color:var(--text-secondary);font-family:inherit;">${escHtml(v.status)}</td>
+                            <td>${escHtml(v.run_id || '—')}</td>
+                            <td style="color:var(--text-muted);font-family:inherit;font-size:11px;">${escHtml(createdDate)}</td>
+                        `;
+                        modelsTableBody.appendChild(row);
+                    }
+                }
+            }
+
+            modelsPanel.classList.remove('hidden');
         }
     </script>
 

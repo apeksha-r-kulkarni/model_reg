@@ -1,18 +1,12 @@
 import os
 import tempfile
 
-import joblib
-import mlflow
-import mlflow.sklearn
-
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-
-# MLflow tracking server — must be running at this address before registering models.
-MLFLOW_TRACKING_URI = "http://127.0.0.1:5000"
+from .services import register_mlflow_model, list_registered_models, ModelRegistrationError
 
 
 def register_page(request):
@@ -30,15 +24,7 @@ def register_model(request):
         model_name  (str)  — name to register the model under in MLflow
         model       (file) — a .pkl file produced by joblib/sklearn
 
-    Returns JSON:
-        {
-            "success":    true,
-            "message":    "Model registered successfully.",
-            "model_name": "<name>",
-            "version":    <int>,
-            "run_id":     "<uuid>",
-            "model_uri":  "runs:/<run_id>/model"
-        }
+    Returns JSON on success or failure.
 
     ⚠️  SECURITY NOTE:
     Joblib/pickle files can execute arbitrary Python code when deserialized.
@@ -79,53 +65,28 @@ def register_model(request):
                 tmp.write(chunk)
             tmp_path = tmp.name
 
-        # ── 3. Load the model via joblib ──────────────────────────────────────
+        # ── 3. Call the business logic service ────────────────────────────────
 
         try:
-            model = joblib.load(tmp_path)
-        except Exception as load_err:
+            result_data = register_mlflow_model(
+                file_path=tmp_path,
+                model_name=model_name,
+                original_filename=model_file.name,
+                file_size=model_file.size
+            )
+        except ModelRegistrationError as err:
             return JsonResponse(
-                {"success": False, "error": f"Could not load model file: {load_err}"},
-                status=422,
+                {"success": False, "error": str(err)},
+                status=422 if "Could not load" in str(err) else 502,
             )
 
-        # ── 4. Connect to MLflow ──────────────────────────────────────────────
-
-        mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-
-        # ── 5. Log model in a run, then register it ───────────────────────────
-
-        try:
-            with mlflow.start_run() as run:
-                # MLflow 3.x: sk_model is the first positional arg, name is keyword
-                mlflow.sklearn.log_model(model, name="model")
-                run_id = run.info.run_id
-
-            # Construct the artifact URI after the run is finalised
-            model_uri = f"runs:/{run_id}/model"
-
-            # Register the logged model in the MLflow Model Registry
-            result = mlflow.register_model(model_uri=model_uri, name=model_name)
-
-        except Exception as mlflow_err:
-            return JsonResponse(
-                {
-                    "success": False,
-                    "error": f"MLflow registration failed: {mlflow_err}",
-                },
-                status=502,
-            )
-
-        # ── 6. Return success ─────────────────────────────────────────────────
+        # ── 4. Return success ─────────────────────────────────────────────────
 
         return JsonResponse(
             {
                 "success": True,
                 "message": "Model registered successfully.",
-                "model_name": result.name,
-                "version": int(result.version),
-                "run_id": run_id,
-                "model_uri": model_uri,
+                **result_data,
             }
         )
 
@@ -134,3 +95,20 @@ def register_model(request):
         if tmp_path and os.path.exists(tmp_path):
             os.unlink(tmp_path)
 
+
+@require_http_methods(["GET"])
+def list_models(request):
+    """
+    GET /api/models/
+
+    Returns a JSON list of all models registered in the MLflow Model Registry.
+    """
+    try:
+        models = list_registered_models()
+    except ModelRegistrationError as err:
+        return JsonResponse(
+            {"success": False, "error": str(err)},
+            status=502,
+        )
+
+    return JsonResponse({"success": True, "models": models})
