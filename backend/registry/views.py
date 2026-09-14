@@ -60,10 +60,16 @@ def register_model(request):
     tmp_path = None
 
     try:
-        with tempfile.NamedTemporaryFile(suffix=".pkl", delete=False) as tmp:
-            for chunk in model_file.chunks():
-                tmp.write(chunk)
-            tmp_path = tmp.name
+        try:
+            with tempfile.NamedTemporaryFile(suffix=".pkl", delete=False) as tmp:
+                for chunk in model_file.chunks():
+                    tmp.write(chunk)
+                tmp_path = tmp.name
+        except OSError as io_err:
+            return JsonResponse(
+                {"success": False, "error": f"Could not save uploaded file: {io_err}"},
+                status=500,
+            )
 
         # ── 3. Call the business logic service ────────────────────────────────
 
@@ -90,6 +96,13 @@ def register_model(request):
             }
         )
 
+    except Exception as unexpected_err:
+        # Safety net: guarantee JSON is always returned, never an HTML 500 page.
+        return JsonResponse(
+            {"success": False, "error": f"Unexpected server error: {unexpected_err}"},
+            status=500,
+        )
+
     finally:
         # Always remove the temp file, regardless of success or error
         if tmp_path and os.path.exists(tmp_path):
@@ -109,6 +122,12 @@ def list_models(request):
         return JsonResponse(
             {"success": False, "error": str(err)},
             status=502,
+        )
+    except Exception as unexpected_err:
+        # Safety net: guarantee JSON is always returned, never an HTML 500 page.
+        return JsonResponse(
+            {"success": False, "error": f"Unexpected server error: {unexpected_err}"},
+            status=500,
         )
 
     return JsonResponse({"success": True, "models": models})
