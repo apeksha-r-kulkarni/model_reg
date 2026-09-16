@@ -1,13 +1,8 @@
 import os
-from pathlib import Path
 import mlflow
 import mlflow.pytorch
 import mlflow.onnx
 from mlflow.exceptions import MlflowException
-from dotenv import load_dotenv
-
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-load_dotenv(BASE_DIR / ".env")
 
 MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
 
@@ -35,27 +30,6 @@ def get_model_size_from_mlflow(client: mlflow.MlflowClient, version_obj) -> int 
                 return total_size
         except Exception:
             pass
-
-    try:
-        from django.conf import settings
-        mlartifacts_dir = settings.BASE_DIR.parent / "mlartifacts"
-        if mlartifacts_dir.exists():
-            target_dirs = []
-            if source.startswith("models:/"):
-                target_dirs.append(mlartifacts_dir / "0" / "models" / source.replace("models:/", ""))
-            if run_id:
-                target_dirs.append(mlartifacts_dir / "0" / run_id)
-
-            for target in target_dirs:
-                if target.exists():
-                    disk_size = 0
-                    for root, _, files in os.walk(target):
-                        for f in files:
-                            disk_size += os.path.getsize(os.path.join(root, f))
-                    if disk_size > 0:
-                        return disk_size
-    except Exception:
-        pass
 
     return None
 
