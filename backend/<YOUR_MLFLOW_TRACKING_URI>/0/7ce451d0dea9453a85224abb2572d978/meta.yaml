@@ -1,0 +1,14 @@
+artifact_uri: /home/apeksha-ssi021/Shyena/integrated_model/mlflow_registration/backend/<YOUR_MLFLOW_TRACKING_URI>/0/7ce451d0dea9453a85224abb2572d978/artifacts
+end_time: 1789540235186
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 7ce451d0dea9453a85224abb2572d978
+run_name: zealous-moth-683
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1789540233847
+status: 4
+tags: []
+user_id: apeksha-ssi021

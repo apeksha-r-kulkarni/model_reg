@@ -1,0 +1,14 @@
+artifact_uri: /home/apeksha-ssi021/Shyena/integrated_model/mlflow_registration/backend/<YOUR_MLFLOW_TRACKING_URI>/0/3daeb2401adb4ff5a43aaa1a81fcd111/artifacts
+end_time: 1789540674650
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 3daeb2401adb4ff5a43aaa1a81fcd111
+run_name: vaunted-hound-636
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1789540674636
+status: 4
+tags: []
+user_id: apeksha-ssi021

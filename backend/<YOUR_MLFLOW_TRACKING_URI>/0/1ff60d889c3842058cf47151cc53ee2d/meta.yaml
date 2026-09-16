@@ -1,0 +1,14 @@
+artifact_uri: /home/apeksha-ssi021/Shyena/integrated_model/mlflow_registration/backend/<YOUR_MLFLOW_TRACKING_URI>/0/1ff60d889c3842058cf47151cc53ee2d/artifacts
+end_time: 1789539918111
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 1ff60d889c3842058cf47151cc53ee2d
+run_name: vaunted-mole-613
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1789539918095
+status: 4
+tags: []
+user_id: apeksha-ssi021

@@ -1,861 +1,590 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MLflow Model Registry</title>
-    <meta name="description" content="Register your trained scikit-learn models directly into the MLflow Model Registry with a single click.">
-
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-
+    <meta charset="utf-8">
+    <title>Model Registry</title>
     <style>
-        /* ── Design tokens ───────────────────────────────────────────────── */
         :root {
-            --bg-base:        #0b0f1a;
-            --bg-card:        rgba(255, 255, 255, 0.04);
-            --bg-card-hover:  rgba(255, 255, 255, 0.07);
-            --border:         rgba(255, 255, 255, 0.09);
-            --border-focus:   rgba(99, 179, 237, 0.6);
-            --border-drop:    rgba(99, 179, 237, 0.8);
-            --accent-blue:    #63b3ed;
-            --accent-purple:  #9f7aea;
-            --accent-green:   #68d391;
-            --accent-red:     #fc8181;
-            --text-primary:   #e2e8f0;
-            --text-secondary: #94a3b8;
-            --text-muted:     #64748b;
-            --radius-lg:      16px;
-            --radius-md:      10px;
-            --radius-sm:      6px;
-            --shadow-glow:    0 0 40px rgba(99, 179, 237, 0.08);
-            --transition:     all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-color: #f8fafc;
+            --surface-color: #ffffff;
+            --text-color: #1e293b;
+            --border-color: #e2e8f0;
+            --radius: 8px;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
-
-        /* ── Reset & base ────────────────────────────────────────────────── */
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Inter', system-ui, sans-serif;
-            background-color: var(--bg-base);
-            color: var(--text-primary);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-            /* Subtle dot-grid background */
-            background-image:
-                radial-gradient(circle at 20% 20%, rgba(99,179,237,0.06) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(159,122,234,0.06) 0%, transparent 50%),
-                radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
-            background-size: 100% 100%, 100% 100%, 28px 28px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2rem;
+            line-height: 1.5;
         }
 
-        /* ── Page header ─────────────────────────────────────────────────── */
-        .page-header {
-            text-align: center;
-            margin-bottom: 36px;
-            animation: fadeDown 0.5s ease both;
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
         }
 
-        .page-header .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(99, 179, 237, 0.1);
-            border: 1px solid rgba(99, 179, 237, 0.25);
-            border-radius: 100px;
-            padding: 4px 14px;
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--accent-blue);
-            margin-bottom: 16px;
+        @media (min-width: 768px) {
+            .container {
+                grid-template-columns: 2fr 1fr;
+            }
         }
 
-        .page-header .badge-dot {
-            width: 6px; height: 6px;
-            border-radius: 50%;
-            background: var(--accent-blue);
-            animation: pulse 2s infinite;
-        }
-
-        .page-header h1 {
-            font-size: clamp(26px, 5vw, 38px);
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-blue) 60%, var(--accent-purple) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            line-height: 1.2;
-        }
-
-        .page-header p {
-            margin-top: 10px;
-            font-size: 14px;
-            color: var(--text-secondary);
-            font-weight: 400;
-        }
-
-        /* ── Card ────────────────────────────────────────────────────────── */
         .card {
-            width: 100%;
-            max-width: 580px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 36px;
-            backdrop-filter: blur(20px);
-            box-shadow: var(--shadow-glow), 0 4px 24px rgba(0,0,0,0.4);
-            animation: fadeUp 0.5s ease 0.1s both;
+            background: var(--surface-color);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 2rem;
         }
 
-        /* ── Form elements ───────────────────────────────────────────────── */
-        .field {
-            margin-bottom: 24px;
+        h1,
+        h2 {
+            margin-top: 0;
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
         }
 
         label {
             display: block;
-            font-size: 12px;
-            font-weight: 600;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #334155;
+            font-size: 0.9rem;
         }
 
-        input[type="text"] {
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
             width: 100%;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            padding: 13px 16px;
-            color: var(--text-primary);
+            padding: 0.6rem 0.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
             font-family: inherit;
-            font-size: 15px;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            transition: border-color 0.15s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus,
+        textarea:focus {
             outline: none;
-            transition: var(--transition);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
 
-        input[type="text"]::placeholder { color: var(--text-muted); }
-
-        input[type="text"]:focus {
-            border-color: var(--border-focus);
-            background: rgba(99, 179, 237, 0.04);
-            box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.12);
+        textarea {
+            resize: vertical;
+            min-height: 80px;
         }
 
-        /* ── Drag-and-drop upload zone ───────────────────────────────────── */
-        .drop-zone {
-            position: relative;
-            border: 2px dashed var(--border);
-            border-radius: var(--radius-md);
-            padding: 40px 24px;
+        .checkbox-group label {
+            display: inline-flex;
+            align-items: center;
+            font-weight: normal;
+            margin-bottom: 0.25rem;
+            margin-right: 1rem;
+            cursor: pointer;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 0.5rem;
+        }
+
+        #dropzone {
+            border: 2px dashed #94a3b8;
+            border-radius: var(--radius);
+            padding: 3rem 1.5rem;
             text-align: center;
             cursor: pointer;
-            transition: var(--transition);
-            background: rgba(255,255,255,0.02);
+            margin-top: 1rem;
+            background-color: #f1f5f9;
+            transition: all 0.2s ease;
         }
 
-        .drop-zone:hover,
-        .drop-zone.drag-over {
-            border-color: var(--border-drop);
-            background: rgba(99, 179, 237, 0.05);
-            box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.1);
+        #dropzone:hover {
+            border-color: var(--primary-color);
+            background-color: #eff6ff;
         }
 
-        .drop-zone.has-file {
-            border-style: solid;
-            border-color: rgba(104, 211, 145, 0.5);
-            background: rgba(104, 211, 145, 0.04);
+        #dropzone p {
+            margin: 0;
+            color: #64748b;
+            font-size: 0.95rem;
         }
 
-        /* Hidden real file input, overlaid on drop zone */
-        #modelFileInput {
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            cursor: pointer;
-            width: 100%;
-            height: 100%;
+        #dropzone.dragover {
+            border-color: var(--primary-color);
+            background-color: #eff6ff;
         }
 
-        .drop-zone-icon {
-            font-size: 40px;
-            margin-bottom: 12px;
-            display: block;
-            transition: var(--transition);
-        }
-
-        .drop-zone:hover .drop-zone-icon { transform: scale(1.1); }
-
-        .drop-zone-title {
-            font-size: 15px;
+        #selectedFile {
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--primary-color);
             font-weight: 500;
-            color: var(--text-primary);
-            margin-bottom: 6px;
         }
 
-        .drop-zone-sub {
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        .file-selected {
-            display: none;
-            align-items: center;
-            gap: 10px;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--accent-green);
-        }
-
-        .file-selected .file-icon { font-size: 22px; }
-
-        .drop-zone.has-file .drop-zone-content { display: none; }
-        .drop-zone.has-file .file-selected { display: flex; }
-
-        /* ── Submit button ───────────────────────────────────────────────── */
-        .btn-submit {
-            width: 100%;
-            padding: 14px 24px;
+        button[type="submit"] {
+            background-color: var(--primary-color);
+            color: white;
             border: none;
-            border-radius: var(--radius-md);
-            background: linear-gradient(135deg, #4299e1 0%, #667eea 100%);
-            color: #fff;
-            font-family: inherit;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-            position: relative;
-            overflow: hidden;
-            letter-spacing: 0.01em;
-        }
-
-        .btn-submit::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
-        .btn-submit:hover:not(:disabled)::before { opacity: 1; }
-        .btn-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(66,153,225,0.35); }
-        .btn-submit:active:not(:disabled) { transform: translateY(0); }
-        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        .btn-inner {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        /* ── Spinner ─────────────────────────────────────────────────────── */
-        .spinner {
-            width: 18px; height: 18px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-            display: none;
-        }
-
-        /* ── Result panels ───────────────────────────────────────────────── */
-        #resultPanel { margin-top: 28px; animation: fadeUp 0.4s ease both; }
-        #resultPanel.hidden { display: none; }
-
-        .result-card {
-            border-radius: var(--radius-md);
-            padding: 24px;
-            border: 1px solid;
-        }
-
-        .result-card.success {
-            background: rgba(104, 211, 145, 0.06);
-            border-color: rgba(104, 211, 145, 0.3);
-        }
-
-        .result-card.error {
-            background: rgba(252, 129, 129, 0.06);
-            border-color: rgba(252, 129, 129, 0.3);
-        }
-
-        .result-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .result-icon { font-size: 22px; }
-
-        .result-title {
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .result-card.success .result-title { color: var(--accent-green); }
-        .result-card.error .result-title { color: var(--accent-red); }
-
-        /* Info grid for success details */
-        .info-grid {
-            display: grid;
-            gap: 12px;
-        }
-
-        .info-row {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-        }
-
-        .info-label {
-            font-size: 10px;
-            font-weight: 600;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--text-muted);
-        }
-
-        .info-value {
-            font-size: 13px;
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--text-primary);
-            word-break: break-all;
-            background: rgba(255,255,255,0.04);
-            padding: 7px 10px;
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--border);
-        }
-
-        .info-value.highlight {
-            color: var(--accent-green);
-            border-color: rgba(104,211,145,0.2);
-            background: rgba(104,211,145,0.05);
-        }
-
-        .error-msg {
-            font-size: 14px;
-            color: var(--accent-red);
-            line-height: 1.6;
-        }
-
-        /* ── Divider ─────────────────────────────────────────────────────── */
-        .divider {
-            height: 1px;
-            background: var(--border);
-            margin: 28px 0;
-        }
-
-        /* ── View Models button ──────────────────────────────────────────── */
-        .btn-secondary {
-            width: 100%;
-            padding: 12px 24px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            background: transparent;
-            color: var(--text-secondary);
-            font-family: inherit;
-            font-size: 14px;
+            border-radius: var(--radius);
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
             font-weight: 500;
             cursor: pointer;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 12px;
+            width: 100%;
+            margin-top: 1.5rem;
+            transition: background-color 0.2s ease;
         }
-        .btn-secondary:hover:not(:disabled) {
-            border-color: var(--accent-blue);
-            color: var(--accent-blue);
-            background: rgba(99, 179, 237, 0.05);
+
+        button[type="submit"]:hover {
+            background-color: var(--primary-hover);
         }
-        .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-secondary .btn-spinner {
-            width: 14px; height: 14px;
-            border: 2px solid rgba(148,163,184,0.3);
-            border-top-color: var(--text-secondary);
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
+
+        #notice {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            border-radius: var(--radius);
+            font-size: 0.9rem;
             display: none;
         }
 
-        /* ── Models list panel ───────────────────────────────────────────── */
-        .models-panel {
-            margin-top: 24px;
-            animation: fadeUp 0.4s ease both;
+        .notice-success {
+            background-color: #dcfce7;
+            color: #166534;
+            display: block !important;
         }
-        .models-panel.hidden { display: none; }
-        .models-panel-header {
+
+        .notice-error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            display: block !important;
+        }
+
+        ul#modelList {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        ul#modelList li {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
+        }
+
+        .refresh-btn {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+            cursor: pointer;
+            color: var(--text-color);
+            font-weight: 500;
+            float: right;
+            transition: all 0.2s ease;
+        }
+
+        .refresh-btn:hover {
+            background-color: var(--border-color);
+        }
+
+        .model-item {
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .model-header {
+            background-color: #f1f5f9;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .model-header h3 {
+            margin: 0;
+            font-size: 1.05rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 14px;
-        }
-        .models-panel-title {
-            font-size: 13px;
-            font-weight: 600;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            color: var(--text-secondary);
-        }
-        .models-count {
-            font-size: 11px;
-            padding: 2px 10px;
-            border-radius: 100px;
-            background: rgba(99,179,237,0.1);
-            border: 1px solid rgba(99,179,237,0.2);
-            color: var(--accent-blue);
-            font-weight: 600;
-        }
-        .models-table-wrap {
-            overflow-x: auto;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border);
-        }
-        .models-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-        .models-table th {
-            text-align: left;
-            padding: 10px 14px;
-            font-size: 10px;
-            font-weight: 600;
-            letter-spacing: 0.07em;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            background: rgba(255,255,255,0.02);
-            border-bottom: 1px solid var(--border);
-        }
-        .models-table td {
-            padding: 11px 14px;
-            color: var(--text-primary);
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            word-break: break-all;
-        }
-        .models-table tr:last-child td { border-bottom: none; }
-        .models-table tr:hover td { background: rgba(255,255,255,0.02); }
-        .version-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 100px;
-            background: rgba(104,211,145,0.1);
-            border: 1px solid rgba(104,211,145,0.25);
-            color: var(--accent-green);
-            font-size: 11px;
-            font-weight: 600;
-        }
-        .empty-state {
-            padding: 28px;
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 13px;
-            font-family: inherit;
         }
 
-        /* ── Animations ──────────────────────────────────────────────────── */
-        @keyframes fadeDown {
-            from { opacity: 0; transform: translateY(-16px); }
-            to   { opacity: 1; transform: translateY(0); }
+        .badge {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: normal;
         }
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(16px); }
-            to   { opacity: 1; transform: translateY(0); }
+
+        .model-meta {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 0.25rem;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+
+        .version-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            background: white;
         }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
+
+        .version-list li {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.85rem;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .version-list li:last-child {
+            border-bottom: none;
+        }
+
+        .run-id {
+            color: #94a3b8;
+            font-family: monospace;
+            font-size: 0.8rem;
         }
     </style>
 </head>
 
 <body>
+    <div class="container">
+        <div class="card">
+            <h1>Register Model</h1>
+            <form id="uploadForm">
+                <div class="form-group">
+                    <label for="model_name">Model Name *</label>
+                    <input type="text" id="model_name" name="model_name" required
+                        placeholder="e.g., resnet50_production">
+                </div>
 
-    <!-- ── Page header ────────────────────────────────────────────────── -->
-    <header class="page-header">
-        <div class="badge">
-            <span class="badge-dot"></span>
-            MLflow Model Registry
-        </div>
-        <h1>Register a Model</h1>
-        <p>Upload a trained <code>.pkl</code> model to log and register it via MLflow.</p>
-    </header>
-
-    <!-- ── Registration card ──────────────────────────────────────────── -->
-    <main class="card">
-        <form id="registerForm" novalidate>
-
-            <!-- Model Name -->
-            <div class="field">
-                <label for="modelNameInput">Model Name</label>
-                <input
-                    id="modelNameInput"
-                    type="text"
-                    name="model_name"
-                    placeholder="e.g. simple_classifier"
-                    autocomplete="off"
-                    required
-                >
-            </div>
-
-            <!-- File Upload -->
-            <div class="field">
-                <label>Model File <span style="color:var(--text-muted);text-transform:none;font-weight:400;">(.pkl)</span></label>
-
-                <div class="drop-zone" id="dropZone">
-                    <!-- Invisible real file input layered on top -->
-                    <input
-                        id="modelFileInput"
-                        type="file"
-                        name="model"
-                        accept=".pkl"
-                        required
-                        aria-label="Upload .pkl model file"
-                    >
-
-                    <!-- Default state (no file) -->
-                    <div class="drop-zone-content">
-                        <span class="drop-zone-icon">📦</span>
-                        <div class="drop-zone-title">Drag & drop your model here</div>
-                        <div class="drop-zone-sub">or click to browse — .pkl files only</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="model_type">Model Type *</label>
+                        <select id="model_type" name="model_type" required>
+                            <option value="">Select...</option>
+                            <option value="Speech">Speech</option>
+                            <option value="NER">NER</option>
+                            <option value="File Classifier">File Classifier</option>
+                        </select>
                     </div>
 
-                    <!-- File selected state -->
-                    <div class="file-selected">
-                        <span class="file-icon">✅</span>
-                        <span id="selectedFileName">model.pkl</span>
+                    <div class="form-group">
+                        <label for="architecture">Architecture</label>
+                        <select id="architecture" name="architecture">
+                            <option value="">Select...</option>
+                            <option value="__ADD_NEW__">+ Add New Architecture</option>
+                        </select>
+                        <input type="text" id="new_architecture" placeholder="Enter new architecture name" style="display:none; margin-top:0.5rem;" />
                     </div>
                 </div>
-            </div>
 
-            <div class="divider"></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="accuracy">Accuracy *</label>
+                        <input type="number" id="accuracy" name="accuracy" min="0" max="100" step="0.01" required
+                            placeholder="95">
+                    </div>
 
-            <!-- Submit -->
-            <button class="btn-submit" id="submitBtn" type="submit">
-                <span class="btn-inner">
-                    <span class="spinner" id="spinner"></span>
-                    <span id="btnText">Register Model</span>
-                </span>
-            </button>
+                    <div class="form-group">
+                        <label for="priority">Priority</label>
+                        <input type="number" id="priority" name="priority" placeholder="1 (Highest)">
+                    </div>
+                </div>
 
-        </form>
+                <div class="form-group checkbox-group" id="deployment_points_container" style="display:none;">
+                    <label>Deployment Points *</label><br>
+                    <div id="deployment_points_list"></div>
+                </div>
 
-        <!-- ── Result panel (shown after submit) ─────────────────────── -->
-        <div id="resultPanel" class="hidden"></div>
+                <div class="form-group checkbox-group">
+                    <label><input type="checkbox" id="is_deployable" name="is_deployable"> <strong>Is Deployable Ready?</strong></label>
+                </div>
 
-        <!-- ── View Registered Models button ─────────────────────────── -->
-        <button class="btn-secondary" id="listModelsBtn" type="button">
-            <span class="btn-spinner" id="listSpinner"></span>
-            <span id="listBtnText">🗂 View Registered Models</span>
-        </button>
+                <div class="form-group">
+                    <label for="versioning">Versioning *</label>
+                    <select id="versioning" name="versioning" required>
+                        <option value="Auto-increment" selected>Auto-increment (MLflow default)</option>
+                    </select>
+                </div>
 
-        <!-- ── Models list panel ──────────────────────────────────────── -->
-        <div class="models-panel hidden" id="modelsPanel">
-            <div class="models-panel-header">
-                <span class="models-panel-title">Registered Models</span>
-                <span class="models-count" id="modelsCount">0</span>
-            </div>
-            <div class="models-table-wrap">
-                <table class="models-table">
-                    <thead>
-                        <tr>
-                            <th>Version</th>
-                            <th>Status</th>
-                            <th>Run ID</th>
-                            <th>Created</th>
-                        </tr>
-                    </thead>
-                    <tbody id="modelsTableBody"></tbody>
-                </table>
-            </div>
+                <div class="form-group">
+                    <label for="remarks">Remarks</label>
+                    <textarea id="remarks" name="remarks"
+                        placeholder="Any additional notes about this model iteration..."></textarea>
+                </div>
+
+                <div id="dropzone" onclick="document.getElementById('fileInput').click()">
+                    <p><strong>Click to browse</strong> or drag and drop</p>
+                    <p style="font-size: 0.8rem; margin-top: 0.25rem;">Supported formats: .pt, .onnx</p>
+                    <input type="file" id="fileInput" name="model" accept=".pt, .onnx" style="display: none;">
+                </div>
+                <div id="selectedFile"></div>
+
+                <button type="submit">Upload & Register</button>
+                <div id="notice"></div>
+            </form>
         </div>
 
-    </main>
-
+        <div class="card" style="align-self: start;">
+            <h2>
+                Registry Log
+                <button type="button" class="refresh-btn" onclick="fetchModels()">Refresh</button>
+            </h2>
+            <div id="modelList">
+                <p style="color: #64748b; font-size: 0.9rem;">Loading models...</p>
+            </div>
+        </div>
+    </div>
 
     <script>
-        const form         = document.getElementById('registerForm');
-        const dropZone     = document.getElementById('dropZone');
-        const fileInput    = document.getElementById('modelFileInput');
-        const selectedName = document.getElementById('selectedFileName');
-        const submitBtn    = document.getElementById('submitBtn');
-        const spinner      = document.getElementById('spinner');
-        const btnText      = document.getElementById('btnText');
-        const resultPanel  = document.getElementById('resultPanel');
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const notice = document.getElementById('notice');
+        const modelList = document.getElementById('modelList');
+        const uploadForm = document.getElementById('uploadForm');
+        const selectedFileDiv = document.getElementById('selectedFile');
+        const nameInput = document.getElementById('model_name');
+        
+        // Architecture Logic
+        const architectureSelect = document.getElementById('architecture');
+        const newArchInput = document.getElementById('new_architecture');
+        
+        // Deployment Points Logic
+        const modelTypeSelect = document.getElementById('model_type');
+        const dpContainer = document.getElementById('deployment_points_container');
+        const dpList = document.getElementById('deployment_points_list');
+        
+        const COMPATIBILITY_RULES = {
+            'Speech': ['Cloud App', 'Edge Device'],
+            'NER': ['Cloud App'],
+            'File Classifier': ['Dashboard', 'Cloud App']
+        };
 
-        // ── Drag-and-drop visual feedback ─────────────────────────────────
-
-        ['dragenter', 'dragover'].forEach(evt =>
-            dropZone.addEventListener(evt, e => {
-                e.preventDefault();
-                dropZone.classList.add('drag-over');
-            })
-        );
-
-        ['dragleave', 'drop'].forEach(evt =>
-            dropZone.addEventListener(evt, e => {
-                e.preventDefault();
-                dropZone.classList.remove('drag-over');
-            })
-        );
-
-        dropZone.addEventListener('drop', e => {
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                // Attach dropped file to the real input via DataTransfer
-                const dt = new DataTransfer();
-                dt.items.add(files[0]);
-                fileInput.files = dt.files;
-                showFileSelected(files[0].name);
-            }
-        });
-
-        fileInput.addEventListener('change', () => {
-            if (fileInput.files.length > 0) {
-                showFileSelected(fileInput.files[0].name);
-            }
-        });
-
-        function showFileSelected(name) {
-            selectedName.textContent = name;
-            dropZone.classList.add('has-file');
-        }
-
-        // ── Form submission ────────────────────────────────────────────────
-
-        form.addEventListener('submit', async function (e) {
-            e.preventDefault();
-
-            const modelName = document.getElementById('modelNameInput').value.trim();
-
-            // Client-side guard
-            if (!modelName) {
-                showError('Please enter a model name.');
-                return;
-            }
-            if (!fileInput.files || fileInput.files.length === 0) {
-                showError('Please select a .pkl file to upload.');
-                return;
-            }
-
-            setLoading(true);
-            resultPanel.classList.add('hidden');
-
-            const formData = new FormData(form);
-
-            try {
-                const response = await fetch('/api/models/register/', {
-                    method: 'POST',
-                    body: formData,
+        modelTypeSelect.addEventListener('change', () => {
+            const selected = modelTypeSelect.value;
+            dpList.innerHTML = '';
+            if (selected && COMPATIBILITY_RULES[selected]) {
+                dpContainer.style.display = 'block';
+                COMPATIBILITY_RULES[selected].forEach(dp => {
+                    dpList.innerHTML += `<label><input type="checkbox" name="deployment_points" value="${dp}"> ${dp}</label>`;
                 });
-
-                const data = await safeJson(response);
-
-                if (data.success) {
-                    showSuccess(data);
-                } else {
-                    showError(data.error || 'An unknown error occurred.');
-                }
-
-            } catch (err) {
-                showError(`Network error: ${err.message}`);
-            } finally {
-                setLoading(false);
+            } else {
+                dpContainer.style.display = 'none';
             }
         });
 
-        // ── UI helpers ─────────────────────────────────────────────────────
-
-        function setLoading(loading) {
-            submitBtn.disabled = loading;
-            spinner.style.display = loading ? 'block' : 'none';
-            btnText.textContent = loading ? 'Registering…' : 'Register Model';
+        function fetchArchitectures() {
+            fetch('/api/architectures/')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        architectureSelect.innerHTML = '<option value="">Select...</option><option value="__ADD_NEW__">+ Add New Architecture</option>';
+                        data.architectures.forEach(arch => {
+                            const opt = document.createElement('option');
+                            opt.value = arch.id;
+                            opt.textContent = arch.name;
+                            architectureSelect.insertBefore(opt, architectureSelect.lastChild);
+                        });
+                    }
+                });
         }
-
-        function showSuccess(data) {
-            resultPanel.innerHTML = `
-                <div class="result-card success">
-                    <div class="result-header">
-                        <span class="result-icon">🎉</span>
-                        <span class="result-title">Model Registered Successfully</span>
-                    </div>
-                    <div class="info-grid">
-                        <div class="info-row">
-                            <span class="info-label">Model Name</span>
-                            <span class="info-value highlight">${escHtml(data.model_name)}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Version</span>
-                            <span class="info-value highlight">v${escHtml(String(data.version))}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Run ID</span>
-                            <span class="info-value">${escHtml(data.run_id)}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Model URI</span>
-                            <span class="info-value">${escHtml(data.model_uri)}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-            resultPanel.classList.remove('hidden');
-        }
-
-        function showError(message) {
-            resultPanel.innerHTML = `
-                <div class="result-card error">
-                    <div class="result-header">
-                        <span class="result-icon">⚠️</span>
-                        <span class="result-title">Registration Failed</span>
-                    </div>
-                    <p class="error-msg">${escHtml(message)}</p>
-                </div>
-            `;
-            resultPanel.classList.remove('hidden');
-        }
-
-        // Basic HTML escape to prevent XSS from server response values
-        function escHtml(str) {
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
-        }
-
-        // Safe JSON parser — returns a friendly error if the server sends HTML instead of JSON
-        async function safeJson(response) {
-            const ct = response.headers.get('content-type') || '';
-            if (!ct.includes('application/json')) {
-                const text = await response.text();
-                throw new Error(`Server returned HTTP ${response.status}. Expected JSON but got: ${text.substring(0, 120)}...`);
+        
+        architectureSelect.addEventListener('change', () => {
+            if (architectureSelect.value === '__ADD_NEW__') {
+                newArchInput.style.display = 'block';
+                newArchInput.required = true;
+            } else {
+                newArchInput.style.display = 'none';
+                newArchInput.required = false;
             }
-            return response.json();
+        });
+        
+        fetchArchitectures();
+
+        let currentFile = null;
+
+        function setFile(file) {
+            currentFile = file;
+            if (file) {
+                selectedFileDiv.innerText = 'Selected file: ' + file.name;
+                if (!nameInput.value) {
+                    nameInput.value = file.name.replace(/\.(pt|onnx)$/i, '');
+                }
+            } else {
+                selectedFileDiv.innerText = '';
+            }
         }
 
-        // ── View Registered Models ─────────────────────────────────────────
+        dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+        dropzone.addEventListener('dragleave', e => { dropzone.classList.remove('dragover'); });
+        dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('dragover'); setFile(e.dataTransfer.files[0]); });
+        fileInput.addEventListener('change', e => { setFile(e.target.files[0]); });
 
-        const listModelsBtn  = document.getElementById('listModelsBtn');
-        const listSpinner    = document.getElementById('listSpinner');
-        const listBtnText    = document.getElementById('listBtnText');
-        const modelsPanel    = document.getElementById('modelsPanel');
-        const modelsCount    = document.getElementById('modelsCount');
-        const modelsTableBody = document.getElementById('modelsTableBody');
+        function showNotice(msg, isSuccess) {
+            notice.className = isSuccess ? 'notice-success' : 'notice-error';
+            notice.innerText = msg;
+        }
 
-        listModelsBtn.addEventListener('click', async function () {
-            setListLoading(true);
-
-            try {
-                const response = await fetch('/api/models/');
-                const data = await safeJson(response);
-
-                if (!data.success) {
-                    showError(data.error || 'Could not fetch models.');
-                    modelsPanel.classList.add('hidden');
+        uploadForm.addEventListener('submit', async e => {
+            e.preventDefault();
+            if (!currentFile) {
+                showNotice('Error: Please select a model file (.pt or .onnx).', false);
+                return;
+            }
+            
+            // Check deployment points
+            if (modelTypeSelect.value && COMPATIBILITY_RULES[modelTypeSelect.value]) {
+                const checked = document.querySelectorAll('input[name="deployment_points"]:checked');
+                if (checked.length === 0) {
+                    showNotice('Error: Please select at least one deployment point.', false);
                     return;
                 }
-
-                renderModelsTable(data.models);
-
-            } catch (err) {
-                showError(`Network error: ${err.message}`);
-                modelsPanel.classList.add('hidden');
-            } finally {
-                setListLoading(false);
-            }
-        });
-
-        function setListLoading(loading) {
-            listModelsBtn.disabled = loading;
-            listSpinner.style.display = loading ? 'block' : 'none';
-            listBtnText.textContent = loading ? 'Fetching…' : '🗂 View Registered Models';
-        }
-
-        function renderModelsTable(models) {
-            // Count total unique model names
-            modelsCount.textContent = models.length;
-            modelsTableBody.innerHTML = '';
-
-            if (models.length === 0) {
-                modelsTableBody.innerHTML = `
-                    <tr><td colspan="4" class="empty-state">No models registered yet.</td></tr>
-                `;
-                modelsPanel.classList.remove('hidden');
-                return;
             }
 
-            for (const model of models) {
-                const versions = model.all_versions;
+            const btn = uploadForm.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerText = 'Uploading...';
+            notice.className = 'notice-success';
+            notice.innerText = 'Uploading...';
 
-                // Group header row — spans full width with the model name
-                const groupRow = document.createElement('tr');
-                groupRow.innerHTML = `
-                    <td colspan="4" style="
-                        background: rgba(99,179,237,0.06);
-                        border-bottom: 1px solid rgba(99,179,237,0.15);
-                        border-top: 1px solid rgba(99,179,237,0.15);
-                        padding: 8px 14px;
-                        font-family: inherit;
-                        font-size: 12px;
-                        font-weight: 600;
-                        color: var(--accent-blue);
-                        letter-spacing: 0.04em;
-                    ">📦 ${escHtml(model.name)} <span style="font-weight:400;color:var(--text-muted);">(${versions.length} version${versions.length !== 1 ? 's' : ''})</span></td>
-                `;
-                modelsTableBody.appendChild(groupRow);
-
-                if (versions.length === 0) {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>—</td><td>—</td><td>—</td><td>—</td>
-                    `;
-                    modelsTableBody.appendChild(row);
-                } else {
-                    // One row per version — newest first (already sorted by service)
-                    for (const v of versions) {
-                        const isLatest = v.version === versions[0].version;
-                        const createdDate = v.creation_timestamp
-                            ? new Date(v.creation_timestamp).toLocaleString()
-                            : '—';
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td style="white-space: nowrap;">
-                                <span class="version-badge">v${escHtml(String(v.version))}</span>
-                                ${isLatest ? '<span style="margin-left:6px;font-size:10px;color:var(--accent-green);font-family:inherit;font-weight:600;">LATEST</span>' : ''}
-                            </td>
-                            <td style="color:var(--text-secondary);font-family:inherit;">${escHtml(v.status)}</td>
-                            <td>${escHtml(v.run_id || '—')}</td>
-                            <td style="color:var(--text-muted);font-family:inherit;font-size:11px;">${escHtml(createdDate)}</td>
-                        `;
-                        modelsTableBody.appendChild(row);
+            let archValue = architectureSelect.value;
+            if (archValue === '__ADD_NEW__') {
+                try {
+                    const archRes = await fetch('/api/architectures/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: newArchInput.value })
+                    }).then(r => r.json());
+                    if (archRes.success) {
+                        archValue = archRes.architecture.id;
+                    } else {
+                        throw new Error(archRes.error);
                     }
+                } catch (err) {
+                    showNotice('Error creating architecture: ' + err.message, false);
+                    btn.disabled = false;
+                    btn.innerText = 'Upload & Register';
+                    return;
                 }
             }
 
-            modelsPanel.classList.remove('hidden');
-        }
-    </script>
+            const formData = new FormData(uploadForm);
+            formData.set('model', currentFile);
+            if (archValue && archValue !== '__ADD_NEW__') {
+                formData.set('architecture', archValue);
+            } else {
+                formData.delete('architecture');
+            }
 
+            fetch('/api/models/register/', { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotice('Successfully registered model!', true);
+                        fetchModels();
+                        fetchArchitectures();
+                        uploadForm.reset();
+                        setFile(null);
+                        newArchInput.style.display = 'none';
+                        dpContainer.style.display = 'none';
+                    } else {
+                        showNotice('Error: ' + data.error, false);
+                    }
+                })
+                .catch(err => {
+                    showNotice('Network error uploading file.', false);
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.innerText = 'Upload & Register';
+                });
+        });
+
+        function fetchModels() {
+            const btn = document.querySelector('.refresh-btn');
+            if (btn) btn.innerText = 'Refreshing...';
+
+            fetch('/api/models/')
+                .then(res => res.json())
+                .then(data => {
+                    modelList.innerHTML = '';
+                    if (data.success && data.models.length > 0) {
+                        data.models.forEach(m => {
+                            const latest = m.all_versions[0];
+                            const framework = (latest && latest.framework) ? latest.framework.toUpperCase() : 'Unknown';
+                            const modelType = (latest && latest.model_type) ? latest.model_type : 'Unknown';
+
+                            const modelDiv = document.createElement('div');
+                            modelDiv.className = 'model-item';
+
+                            const headerHTML = `
+                                <div class="model-header">
+                                    <h3>
+                                        ${m.name} 
+                                        <span class="badge">v${latest.version} (Latest)</span>
+                                    </h3>
+                                    <div class="model-meta">Framework: <strong>${framework}</strong> | Type: <strong>${modelType}</strong></div>
+                                </div>
+                            `;
+
+                            let versionsHTML = '<ul class="version-list">';
+                            m.all_versions.forEach(v => {
+                                versionsHTML += `
+                                    <li>
+                                        <div><strong>v${v.version}</strong></div>
+                                        <div>
+                                            <div>Size: ${v.formatted_size} | Accuracy: ${v.accuracy}% | Architecture: ${v.architecture}</div>
+                                            <div class="run-id">Deployable: ${v.is_deployable} | Priority: ${v.priority !== null ? v.priority : 'N/A'} | Type: ${v.model_type}</div>
+                                            <div class="run-id">Deployment Points: ${(v.deployment_points && v.deployment_points.length > 0) ? v.deployment_points.join(', ') : 'None'}</div>
+                                            <div class="run-id">Run ID: ${v.run_id}</div>
+                                        </div>
+                                    </li>
+                                `;
+                            });
+                            versionsHTML += '</ul>';
+
+                            modelDiv.innerHTML = headerHTML + versionsHTML;
+                            modelList.appendChild(modelDiv);
+                        });
+                    } else {
+                        modelList.innerHTML = '<p style="color: #64748b; font-size: 0.9rem;">No models registered yet.</p>';
+                    }
+                })
+                .catch(() => {
+                    modelList.innerHTML = '<p style="color: #ef4444; font-size: 0.9rem;">Failed to load registry.</p>';
+                })
+                .finally(() => {
+                    if (btn) btn.innerText = 'Refresh';
+                });
+        }
+
+        fetchModels();
+    </script>
 </body>
 </html>

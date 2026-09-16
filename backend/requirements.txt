@@ -1,0 +1,11 @@
+mlflow
+django
+joblib
+scikit-learn
+boto3
+torch
+onnx
+python-dotenv
+torch
+onnx
+python-dotenv

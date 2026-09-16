@@ -1,0 +1,10 @@
+artifact_location: /home/apeksha-ssi021/Shyena/integrated_model/mlflow_registration/backend/<YOUR_MLFLOW_TRACKING_URI>/0/models/m-e60b974422504d449cad22e8f9df9a80/artifacts
+creation_timestamp: 1789540246589
+experiment_id: '0'
+last_updated_timestamp: 1789540246693
+model_id: m-e60b974422504d449cad22e8f9df9a80
+model_type: null
+name: model
+source_run_id: 5b3c7df18ae64cbea22621c5ad9bbd49
+status: 3
+status_message: null

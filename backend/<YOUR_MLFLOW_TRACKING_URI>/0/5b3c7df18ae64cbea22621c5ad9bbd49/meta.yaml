@@ -1,0 +1,14 @@
+artifact_uri: /home/apeksha-ssi021/Shyena/integrated_model/mlflow_registration/backend/<YOUR_MLFLOW_TRACKING_URI>/0/5b3c7df18ae64cbea22621c5ad9bbd49/artifacts
+end_time: 1789540246709
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 5b3c7df18ae64cbea22621c5ad9bbd49
+run_name: agreeable-wren-299
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1789540246555
+status: 4
+tags: []
+user_id: apeksha-ssi021

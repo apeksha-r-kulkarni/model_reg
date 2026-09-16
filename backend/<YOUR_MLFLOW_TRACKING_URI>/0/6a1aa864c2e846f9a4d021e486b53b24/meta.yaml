@@ -1,0 +1,14 @@
+artifact_uri: /home/apeksha-ssi021/Shyena/integrated_model/mlflow_registration/backend/<YOUR_MLFLOW_TRACKING_URI>/0/6a1aa864c2e846f9a4d021e486b53b24/artifacts
+end_time: 1789540206524
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 6a1aa864c2e846f9a4d021e486b53b24
+run_name: worried-snail-905
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1789540206516
+status: 4
+tags: []
+user_id: apeksha-ssi021

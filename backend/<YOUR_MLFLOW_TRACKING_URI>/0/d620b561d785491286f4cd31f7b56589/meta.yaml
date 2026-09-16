@@ -1,0 +1,14 @@
+artifact_uri: /home/apeksha-ssi021/Shyena/integrated_model/mlflow_registration/backend/<YOUR_MLFLOW_TRACKING_URI>/0/d620b561d785491286f4cd31f7b56589/artifacts
+end_time: 1789540246729
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: d620b561d785491286f4cd31f7b56589
+run_name: bemused-steed-178
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1789540246720
+status: 4
+tags: []
+user_id: apeksha-ssi021

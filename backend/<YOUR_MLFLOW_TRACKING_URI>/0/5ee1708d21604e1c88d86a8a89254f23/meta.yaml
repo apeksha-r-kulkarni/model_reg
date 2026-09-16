@@ -1,0 +1,14 @@
+artifact_uri: /home/apeksha-ssi021/Shyena/integrated_model/mlflow_registration/backend/<YOUR_MLFLOW_TRACKING_URI>/0/5ee1708d21604e1c88d86a8a89254f23/artifacts
+end_time: 1789540195419
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 5ee1708d21604e1c88d86a8a89254f23
+run_name: carefree-swan-751
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1789540195413
+status: 4
+tags: []
+user_id: apeksha-ssi021
