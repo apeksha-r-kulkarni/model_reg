@@ -78,15 +78,34 @@ def update_model_status_registered(
     except ImportedModel.DoesNotExist:
         pass
 
+def sync_deleted_models(active_name_vers: set):
+    """
+    Marks local ImportedModel records as DELETED if their MLflow version is no longer active.
+    Only evaluates models that are currently marked as REGISTERED.
+    """
+    records = ImportedModel.objects.filter(
+        status="REGISTERED"
+    ).exclude(
+        mlflow_name__isnull=True
+    ).exclude(
+        mlflow_version__isnull=True
+    )
+    
+    for imp in records:
+        if (imp.mlflow_name, int(imp.mlflow_version)) not in active_name_vers:
+            imp.status = "DELETED"
+            imp.save(update_fields=["status"])
+
+
 def get_all_imported_models_indexed() -> tuple[Dict[str, ImportedModel], Dict[tuple[str, int], ImportedModel]]:
     imported_by_run = {}
     imported_by_name_ver = {}
     try:
-        for imp in ImportedModel.objects.all():
+        for imp in ImportedModel.objects.exclude(status="DELETED"):
             if imp.run_id:
                 imported_by_run[imp.run_id] = imp
             if imp.mlflow_name and imp.mlflow_version is not None:
-                imported_by_name_ver[(imp.mlflow_name, imp.mlflow_version)] = imp
+                imported_by_name_ver[(imp.mlflow_name, int(imp.mlflow_version))] = imp
     except Exception:
         pass
     return imported_by_run, imported_by_name_ver

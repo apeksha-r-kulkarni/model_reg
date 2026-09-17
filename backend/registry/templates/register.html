@@ -585,6 +585,8 @@
         }
 
         fetchModels();
+        // Auto-refresh every 15 seconds so MLflow deletions appear without manual reload
+        setInterval(fetchModels, 15000);
     </script>
 </body>
 </html>

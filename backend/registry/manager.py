@@ -114,6 +114,13 @@ class MLManager:
         except Exception as err:
             raise ModelRegistrationError(f"Could not connect to MLflow: {err}") from err
 
+        active_name_vers = set()
+        for model, versions_data_raw in registered_models:
+            for v_raw in versions_data_raw:
+                active_name_vers.add((model.name, int(v_raw["version"])))
+
+        db_repository.sync_deleted_models(active_name_vers)
+
         imported_by_run, imported_by_name_ver = db_repository.get_all_imported_models_indexed()
 
         results = []
@@ -153,6 +160,9 @@ class MLManager:
                     "architecture": architecture,
                     "deployment_points": deployment_points,
                 })
+
+            if not versions_data:
+                continue
 
             versions_data.sort(key=lambda x: x["version"], reverse=True)
             results.append({
